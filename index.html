@@ -13,14 +13,27 @@
 .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:16px}.tab{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center;font-weight:850;cursor:pointer}
 .section{display:none}.section.active{display:block}.grid{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}h2{margin:0 0 12px;font-size:18px}.kicker{font-size:12px;color:var(--muted);font-weight:900;letter-spacing:.06em}.hero{font-size:28px;font-weight:950;margin:5px 0 8px}.muted{color:var(--muted)}.note{padding:13px;border-radius:14px;background:var(--soft);font-size:13px;color:var(--muted)}
-.meal{line-height:1.75}.academic{display:grid;gap:9px}.academicRow{display:grid;grid-template-columns:70px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.academicRow:last-child{border-bottom:0}
+.meal{line-height:1.75}
+.mealTabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.mealTab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 11px;font-weight:850;font-size:12px;cursor:pointer}
+.mealTab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.mealName{font-size:16px;font-weight:900;margin-bottom:8px}
+.mealCal{font-size:12px;color:var(--muted);margin-top:8px}
+.academic{display:grid;gap:9px}.academicRow{display:grid;grid-template-columns:70px 1fr;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.academicRow:last-child{border-bottom:0}
 .events{display:grid;gap:8px}.event{border:1px solid var(--line);border-radius:14px;padding:12px}.eventTop{display:flex;justify-content:space-between;gap:10px}.badge{font-size:11px;font-weight:850;background:var(--soft);padding:5px 8px;border-radius:999px;white-space:nowrap}.actions{display:flex;gap:6px;margin-top:8px}.actions button{border:0;border-radius:8px;padding:6px 8px;background:var(--soft);font-size:11px;font-weight:800;cursor:pointer}
 .searchWrap{position:relative}.searchWrap input{width:100%;padding:13px;border:1px solid var(--line);border-radius:13px;font:inherit}.results{display:none;position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:20;background:#fff;border:1px solid var(--line);border-radius:12px;max-height:250px;overflow:auto;box-shadow:0 12px 30px rgba(0,0,0,.12)}.result{padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer}.result:hover{background:var(--soft)}
+.classStatus{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
+.statusCard{padding:14px;border-radius:16px;background:var(--soft)}
+.statusLabel{font-size:11px;font-weight:900;color:var(--muted);letter-spacing:.05em}
+.statusSubject{font-size:20px;font-weight:950;margin-top:5px}
+.statusMeta{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.45}
+.clockLine{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.liveClock{font-size:13px;font-weight:900}
 .lessons{display:grid;gap:5px}.lesson{display:grid;grid-template-columns:70px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}.period{font-weight:900}.room{font-size:11px;background:var(--soft);padding:5px 7px;border-radius:999px;color:var(--muted)}
 .week{overflow:auto}table{width:100%;min-width:760px;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid var(--line);text-align:center;font-size:13px;vertical-align:top}th{font-size:12px;color:var(--muted)}.cellMeta{font-size:10px;color:var(--muted);margin-top:4px}
 .modalBg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:100;align-items:center;justify-content:center;padding:20px}.modalBg.open{display:flex}.modal{width:min(620px,100%);background:#fff;border-radius:20px;padding:18px}.form{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:800;margin-bottom:5px}input,select,textarea{width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit}textarea{min-height:75px}
 .bottom{display:none}
-@media(max-width:760px){.grid,.grid2,.form{grid-template-columns:1fr}.full{grid-column:auto}.tabs{display:none}.hero{font-size:25px}.bottom{display:grid;position:fixed;left:10px;right:10px;bottom:10px;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.95);backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 12px 38px rgba(0,0,0,.14)}.bottom button{border:0;background:transparent;padding:11px 2px;font-size:11px;font-weight:800}.bottom b{display:block;font-size:18px;margin-bottom:2px}}
+@media(max-width:760px){.grid,.grid2,.form{grid-template-columns:1fr}.classStatus{grid-template-columns:1fr 1fr}.full{grid-column:auto}.tabs{display:none}.hero{font-size:25px}.bottom{display:grid;position:fixed;left:10px;right:10px;bottom:10px;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.95);backdrop-filter:blur(16px);border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:0 12px 38px rgba(0,0,0,.14)}.bottom button{border:0;background:transparent;padding:11px 2px;font-size:11px;font-weight:800}.bottom b{display:block;font-size:18px;margin-bottom:2px}}
 </style>
 </head>
 <body>
@@ -36,18 +49,60 @@
 
 <section id="home" class="section active">
  <div class="grid">
-  <div class="card"><div class="kicker">TODAY</div><div class="hero">🍚 오늘의 급식</div><div id="mealBox" class="meal muted">불러오는 중...</div></div>
-  <div class="card"><div class="kicker">SCHOOL</div><div class="hero">📅 가까운 학사일정</div><div id="academicBox" class="academic"><div class="muted">불러오는 중...</div></div></div>
- </div>
- <div class="grid2" style="margin-top:16px">
-  <div class="card"><h2>✅ 다가오는 수행평가</h2><div id="homeAssessments" class="events"></div><div id="firebaseStatus" class="muted" style="font-size:12px;margin-top:9px"></div></div>
   <div class="card">
-   <h2>📅 오늘 내 시간표</h2>
+   <div class="kicker">MY TIMETABLE</div>
+   <div class="clockLine">
+    <div class="hero" style="margin-bottom:0">📅 오늘 내 시간표</div>
+    <div id="liveClock" class="liveClock muted">--:--</div>
+   </div>
+
    <div id="studentPicker">
     <div class="searchWrap"><input id="studentSearch" placeholder="2반 학생 이름 또는 학번 검색"><div id="searchResults" class="results"></div></div>
     <div class="note" style="margin-top:9px">한 번 선택하면 이 기기에 저장됩니다.</div>
    </div>
+
+   <div id="classStatusWrap" style="display:none">
+    <div id="periodMessage" class="note">현재 수업 상태를 확인하는 중...</div>
+    <div class="classStatus">
+     <div class="statusCard">
+      <div class="statusLabel">지금</div>
+      <div id="currentSubject" class="statusSubject">-</div>
+      <div id="currentMeta" class="statusMeta">-</div>
+     </div>
+     <div class="statusCard">
+      <div class="statusLabel">다음 수업</div>
+      <div id="nextSubject" class="statusSubject">-</div>
+      <div id="nextMeta" class="statusMeta">-</div>
+     </div>
+    </div>
+   </div>
+
    <div id="todayLessons" class="lessons" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
+   <div class="kicker">SCHOOL</div>
+   <div class="hero">📅 가까운 학사일정</div>
+   <div id="academicBox" class="academic"><div class="muted">불러오는 중...</div></div>
+  </div>
+ </div>
+
+ <div class="grid2" style="margin-top:16px">
+  <div class="card">
+   <h2>✅ 다가오는 수행평가</h2>
+   <div id="homeAssessments" class="events"></div>
+   <div id="firebaseStatus" class="muted" style="font-size:12px;margin-top:9px"></div>
+  </div>
+
+  <div class="card">
+   <div class="kicker">TODAY</div>
+   <div class="hero">🍚 오늘의 급식</div>
+   <div class="mealTabs">
+    <button class="mealTab active" data-meal="breakfast" onclick="showMeal('breakfast')">조식</button>
+    <button class="mealTab" data-meal="lunch" onclick="showMeal('lunch')">중식</button>
+    <button class="mealTab" data-meal="dinner" onclick="showMeal('dinner')">석식</button>
+   </div>
+   <div id="mealBox" class="meal muted">불러오는 중...</div>
   </div>
  </div>
 </section>
@@ -88,19 +143,49 @@ import {initializeApp} from "https://www.gstatic.com/firebasejs/12.17.1/firebase
 import {getAuth,signInAnonymously} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 import {getFirestore,collection,addDoc,updateDoc,deleteDoc,doc,onSnapshot,query,orderBy,serverTimestamp} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 
-let db=null, assessments=[], allStudents=[], selectedStudent=null;
+let db=null, assessments=[], allStudents=[], selectedStudent=null, bellSchedule={};
 
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 window.show=id=>{document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");window.scrollTo({top:0,behavior:"smooth"});};
+
+let neisMealData={breakfast:null,lunch:null,dinner:null};
+
+window.showMeal=function(kind){
+ document.querySelectorAll(".mealTab").forEach(b=>b.classList.toggle("active",b.dataset.meal===kind));
+ const meal=neisMealData[kind];
+ const labels={breakfast:"조식",lunch:"중식",dinner:"석식"};
+ if(!meal||!meal.menu||!meal.menu.length){
+  document.getElementById("mealBox").innerHTML=`<div class="note">오늘 ${labels[kind]} 정보가 없습니다.</div>`;
+  return;
+ }
+ document.getElementById("mealBox").innerHTML=
+   `<div class="mealName">${labels[kind]}</div>`+
+   meal.menu.map(esc).join("<br>")+
+   (meal.calorie?`<div class="mealCal">열량 · ${esc(meal.calorie)}</div>`:"");
+};
 
 async function loadNeis(){
  try{
   const r=await fetch("./data/neis.json?ts="+Date.now(),{cache:"no-store"});
   const d=await r.json();
-  const meal=d.meal;
-  document.getElementById("mealBox").innerHTML=meal&&meal.menu?meal.menu.map(esc).join("<br>")+(meal.calorie?`<div class="muted" style="margin-top:8px">${esc(meal.calorie)}</div>`:""):"오늘 등록된 급식이 없습니다.";
+
+  // v8 형식(meals) 우선, 기존 v7 meal 데이터도 중식으로 호환
+  neisMealData=d.meals||{
+    breakfast:null,
+    lunch:d.meal||null,
+    dinner:null
+  };
+
+  // 처음에는 중식 표시. 중식이 없으면 조식 → 석식 순으로 자동 선택
+  let first="lunch";
+  if(!neisMealData.lunch && neisMealData.breakfast) first="breakfast";
+  else if(!neisMealData.lunch && !neisMealData.breakfast && neisMealData.dinner) first="dinner";
+  showMeal(first);
+
   const rows=d.schedule||[];
-  document.getElementById("academicBox").innerHTML=rows.length?rows.slice(0,8).map(x=>`<div class="academicRow"><b>${esc(x.date)}</b><div>${esc(x.name)}</div></div>`).join(""):`<div class="note">가까운 학사일정이 없습니다.</div>`;
+  document.getElementById("academicBox").innerHTML=rows.length
+    ?rows.slice(0,8).map(x=>`<div class="academicRow"><b>${esc(x.date)}</b><div>${esc(x.name)}</div></div>`).join("")
+    :`<div class="note">가까운 학사일정이 없습니다.</div>`;
  }catch(e){
   document.getElementById("mealBox").innerHTML=`<div class="note">급식 데이터 준비 중</div>`;
   document.getElementById("academicBox").innerHTML=`<div class="note">학사일정 데이터 준비 중</div>`;
@@ -126,20 +211,153 @@ window.editAssessment=id=>{const e=assessments.find(x=>x.id===id);if(!e)return;d
 window.saveAssessment=async()=>{if(!db){alert("먼저 Firebase를 연결해야 합니다.");return;}const id=document.getElementById("editId").value;const x={subject:subject.value.trim(),type:type.value,title:title.value.trim(),date:date.value,writer:writer.value.trim(),memo:memo.value.trim(),updatedAt:serverTimestamp()};if(!x.subject||!x.title||!x.date){alert("과목, 제목, 날짜는 필수입니다.");return;}if(id)await updateDoc(doc(db,"assessments",id),x);else{x.createdAt=serverTimestamp();await addDoc(collection(db,"assessments"),x);}closeModal();};
 window.deleteAssessment=async id=>{if(db&&confirm("모든 학생 화면에서 이 일정을 삭제할까요?"))await deleteDoc(doc(db,"assessments",id));};
 
+
+function parseBell(period){
+ const raw=bellSchedule?.[period] ?? bellSchedule?.[String(period)];
+ if(!raw)return null;
+ const text=String(raw);
+ const m=text.match(/(\d{1,2}):(\d{2})\s*[~\-–]\s*(\d{1,2}):(\d{2})/);
+ if(!m)return null;
+ return {
+  label:text,
+  start:(+m[1])*60+(+m[2]),
+  end:(+m[3])*60+(+m[4])
+ };
+}
+
+function getTodayParsedLessons(s){
+ const days=["일","월","화","수","목","금","토"];
+ const day=days[new Date().getDay()];
+ const idx=new Date().getDay()-1;
+ if(idx<0||idx>4||!s?.schedule?.[day])return [];
+ const max=s.periodCounts?.[idx]||s.maxPeriods||7;
+ return Array.from({length:max},(_,i)=>({
+  period:i+1,
+  ...parseCell(s.schedule[day][i]||"")
+ }));
+}
+
+function updateLiveClassStatus(){
+ const clock=document.getElementById("liveClock");
+ if(clock){
+  const now=new Date();
+  clock.textContent=now.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit",second:"2-digit",hour12:false});
+ }
+ if(!selectedStudent)return;
+
+ const lessons=getTodayParsedLessons(selectedStudent);
+ const wrap=document.getElementById("classStatusWrap");
+ if(wrap)wrap.style.display="";
+ if(!lessons.length){
+  periodMessage.textContent="오늘은 평일 수업이 없습니다.";
+  currentSubject.textContent="수업 없음";
+  currentMeta.textContent="주말 또는 비수업일";
+  nextSubject.textContent="-";
+  nextMeta.textContent="-";
+  return;
+ }
+
+ const now=new Date();
+ const mins=now.getHours()*60+now.getMinutes();
+ let currentPeriod=null, nextPeriod=null;
+
+ for(const lesson of lessons){
+  const b=parseBell(lesson.period);
+  if(!b)continue;
+  if(mins>=b.start && mins<b.end){
+   currentPeriod={lesson,b};
+   break;
+  }
+  if(mins<b.start && !nextPeriod){
+   nextPeriod={lesson,b};
+  }
+ }
+
+ if(currentPeriod){
+  const {lesson,b}=currentPeriod;
+  periodMessage.textContent=`${lesson.period}교시 수업 중 · ${b.label}`;
+  currentSubject.textContent=lesson.subject||"-";
+  currentMeta.textContent=[lesson.location,lesson.teacher].filter(Boolean).join(" · ")||b.label;
+
+  const nextLesson=lessons.find(x=>x.period===lesson.period+1);
+  if(nextLesson){
+   const nb=parseBell(nextLesson.period);
+   nextSubject.textContent=nextLesson.subject||"-";
+   nextMeta.textContent=`${nextLesson.period}교시${nb?" · "+nb.label:""}${nextLesson.location?" · "+nextLesson.location:""}`;
+  }else{
+   nextSubject.textContent="오늘 수업 끝";
+   nextMeta.textContent="다음 수업이 없습니다.";
+  }
+  return;
+ }
+
+ // 수업 사이 또는 수업 전/후
+ const bellList=lessons
+   .map(l=>({lesson:l,b:parseBell(l.period)}))
+   .filter(x=>x.b);
+
+ if(!bellList.length){
+  periodMessage.textContent="교시 시간 정보를 불러오지 못했습니다.";
+  currentSubject.textContent="시간표 확인";
+  currentMeta.textContent="";
+  nextSubject.textContent=lessons[0]?.subject||"-";
+  nextMeta.textContent=lessons[0]?"1교시":"";
+  return;
+ }
+
+ const first=bellList[0], last=bellList[bellList.length-1];
+
+ if(mins<first.b.start){
+  periodMessage.textContent=`수업 전 · 1교시까지 ${first.b.start-mins}분`;
+  currentSubject.textContent="수업 전";
+  currentMeta.textContent=first.b.label;
+  nextSubject.textContent=first.lesson.subject||"-";
+  nextMeta.textContent=`1교시 · ${first.b.label}${first.lesson.location?" · "+first.lesson.location:""}`;
+  return;
+ }
+
+ if(mins>=last.b.end){
+  periodMessage.textContent="오늘 정규 수업이 끝났습니다.";
+  currentSubject.textContent="수업 종료";
+  currentMeta.textContent=`마지막 수업 ${last.lesson.period}교시 종료`;
+  nextSubject.textContent="내일 시간표";
+  nextMeta.textContent="주간 시간표에서 확인";
+  return;
+ }
+
+ // 쉬는 시간 / 점심시간
+ let prev=null, next=null;
+ for(const item of bellList){
+  if(item.b.end<=mins)prev=item;
+  if(item.b.start>mins){next=item;break;}
+ }
+ if(prev&&next){
+  const gap=next.b.start-prev.b.end;
+  const until=next.b.start-mins;
+  const isLunch=gap>=30;
+  periodMessage.textContent=`${isLunch?"점심시간":"쉬는 시간"} · 다음 수업까지 ${until}분`;
+  currentSubject.textContent=isLunch?"점심시간":"쉬는 시간";
+  currentMeta.textContent=`${prev.lesson.period}교시 종료 → ${next.lesson.period}교시 대기`;
+  nextSubject.textContent=next.lesson.subject||"-";
+  nextMeta.textContent=`${next.lesson.period}교시 · ${next.b.label}${next.lesson.location?" · "+next.lesson.location:""}`;
+ }
+}
+
+setInterval(updateLiveClassStatus,1000);
 function extractJSON(t,name,next){const a="const "+name+" = ",s=t.indexOf(a);if(s<0)throw Error(name+" 없음");const v=s+a.length,b=";\n    const "+next+" =";const e=t.indexOf(b,v);if(e<0)throw Error(name+" 끝 없음");return JSON.parse(t.slice(v,e).trim())}
 function sid(s){const p=String(s.homeroom||"").split("-");return p.length===2?p[0]+String(p[1]).padStart(2,"0")+String(s.number||"").padStart(2,"0"):""}
 function parseCell(html){const d=document.createElement("div");d.innerHTML=html||"";const get=c=>[...d.querySelectorAll(c)].map(x=>x.textContent.trim()).filter(Boolean).join(" / ");return{subject:get(".subject-name")||d.textContent.replace(/\s+/g," ").trim(),location:get(".location-chip"),teacher:get(".teacher-name")}}
 async function loadTimetable(){
  try{
-  const t=await(await fetch(TIMETABLE_RAW)).text();allStudents=extractJSON(t,"allStudents","allTeacherSchedules").filter(s=>String(s.homeroom||"").trim()===CLASS_FILTER);allStudents.forEach(s=>s.uniqueId=s.uniqueId||(s.name+"||"+s.homeroom+"||"+s.number));setupSearch();
+  const t=await(await fetch(TIMETABLE_RAW)).text();allStudents=extractJSON(t,"allStudents","allTeacherSchedules").filter(s=>String(s.homeroom||"").trim()===CLASS_FILTER);bellSchedule=extractJSON(t,"bellSchedule","weeklyScheduleData");allStudents.forEach(s=>s.uniqueId=s.uniqueId||(s.name+"||"+s.homeroom+"||"+s.number));setupSearch();
   const saved=localStorage.getItem("22hub_student"),s=allStudents.find(x=>x.uniqueId===saved);if(s)selectStudent(s);
  }catch(e){document.getElementById("todayLessons").innerHTML=`<div class="note">시간표 연동 실패</div>`;}
 }
 function setupSearch(){const input=document.getElementById("studentSearch"),box=document.getElementById("searchResults");input.oninput=()=>{const q=input.value.trim().toLowerCase();if(!q){box.style.display="none";return;}const m=allStudents.filter(s=>String(s.name).toLowerCase().includes(q)||sid(s).includes(q)).slice(0,12);box.innerHTML=m.map(s=>`<div class="result" data-id="${esc(s.uniqueId)}"><b>${esc(s.name)}</b> <span class="muted">${sid(s)}</span></div>`).join("");box.style.display=m.length?"block":"none";box.querySelectorAll(".result").forEach(el=>el.onclick=()=>{const s=allStudents.find(x=>x.uniqueId===el.dataset.id);if(s)selectStudent(s);});};}
-function selectStudent(s){selectedStudent=s;localStorage.setItem("22hub_student",s.uniqueId);document.getElementById("studentPicker").style.display="none";document.getElementById("weekOwner").textContent=`${s.name} · ${sid(s)}`;renderToday(s);renderWeek(s);}
-function renderToday(s){const days=["일","월","화","수","목","금","토"],day=days[new Date().getDay()],idx=new Date().getDay()-1;if(idx<0||idx>4||!s.schedule?.[day]){todayLessons.innerHTML=`<div class="note">오늘은 평일 수업이 없습니다.</div>`;return;}const max=s.periodCounts?.[idx]||s.maxPeriods||7;todayLessons.innerHTML=Array.from({length:max},(_,i)=>{const c=parseCell(s.schedule[day][i]||"");return `<div class="lesson"><div class="period">${i+1}교시</div><div><b>${esc(c.subject||"-")}</b><div class="muted" style="font-size:11px">${esc(c.teacher)}</div></div><div class="room">${esc(c.location||"교실")}</div></div>`}).join("")}
+function selectStudent(s){selectedStudent=s;localStorage.setItem("22hub_student",s.uniqueId);document.getElementById("studentPicker").style.display="none";document.getElementById("weekOwner").textContent=`${s.name} · ${sid(s)}`;renderToday(s);renderWeek(s);updateLiveClassStatus();}
+function renderToday(s){document.getElementById("classStatusWrap").style.display="";const days=["일","월","화","수","목","금","토"],day=days[new Date().getDay()],idx=new Date().getDay()-1;if(idx<0||idx>4||!s.schedule?.[day]){todayLessons.innerHTML=`<div class="note">오늘은 평일 수업이 없습니다.</div>`;return;}const max=s.periodCounts?.[idx]||s.maxPeriods||7;todayLessons.innerHTML=Array.from({length:max},(_,i)=>{const c=parseCell(s.schedule[day][i]||"");return `<div class="lesson"><div class="period">${i+1}교시</div><div><b>${esc(c.subject||"-")}</b><div class="muted" style="font-size:11px">${esc(c.teacher)}</div></div><div class="room">${esc(c.location||"교실")}</div></div>`}).join("")}
 function renderWeek(s){const days=["월","화","수","목","금"],max=s.maxPeriods||Math.max(...(s.periodCounts||[7]));let h="<tr><th>교시</th>"+days.map(d=>`<th>${d}</th>`).join("")+"</tr>";for(let p=0;p<max;p++){h+=`<tr><th>${p+1}</th>`;days.forEach((d,i)=>{const c=parseCell((s.schedule?.[d]?.[p])||"");h+=`<td><b>${esc(c.subject)}</b><div class="cellMeta">${esc([c.location,c.teacher].filter(Boolean).join(" · "))}</div></td>`});h+="</tr>"}weekTable.innerHTML=h}
 
-loadNeis();initFirebase();loadTimetable();
+updateLiveClassStatus();loadNeis();initFirebase();loadTimetable();
 </script>
 </body></html>
