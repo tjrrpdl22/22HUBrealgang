@@ -1,0 +1,92 @@
+name: Update NEIS data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "10 21 * * *"   # KST 06:10 every day
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch meal and school schedule
+        env:
+          NEIS_KEY: ${{ secrets.NEIS_KEY }}
+          EDU_CODE: P10
+          SCHOOL_CODE: "8321079"
+        run: |
+          python - <<'PY'
+          import os, json, urllib.parse, urllib.request
+          from datetime import datetime, timedelta, timezone
+
+          key = os.environ["NEIS_KEY"]
+          edu = os.environ["EDU_CODE"]
+          school = os.environ["SCHOOL_CODE"]
+          kst = timezone(timedelta(hours=9))
+          today = datetime.now(kst).date()
+          end = today + timedelta(days=60)
+
+          def get(endpoint, params):
+              params = {**params, "KEY": key, "Type": "json", "pIndex": "1", "pSize": "100"}
+              url = "https://open.neis.go.kr/hub/" + endpoint + "?" + urllib.parse.urlencode(params)
+              with urllib.request.urlopen(url, timeout=30) as r:
+                  return json.load(r)
+
+          meal_data = get("mealServiceDietInfo", {
+              "ATPT_OFCDC_SC_CODE": edu,
+              "SD_SCHUL_CODE": school,
+              "MLSV_YMD": today.strftime("%Y%m%d")
+          })
+          meal_rows = (meal_data.get("mealServiceDietInfo") or [{}, {"row": []}])
+          meal_rows = meal_rows[1].get("row", []) if len(meal_rows) > 1 else []
+          meal_row = next((x for x in meal_rows if "중식" in str(x.get("MMEAL_SC_NM",""))), meal_rows[0] if meal_rows else None)
+          meal = None
+          if meal_row:
+              raw = str(meal_row.get("DDISH_NM","")).replace("<br/>","<br>").replace("<br />","<br>")
+              menu = [x.strip() for x in raw.split("<br>") if x.strip()]
+              meal = {"menu": menu, "calorie": meal_row.get("CAL_INFO","")}
+
+          sch_data = get("SchoolSchedule", {
+              "ATPT_OFCDC_SC_CODE": edu,
+              "SD_SCHUL_CODE": school,
+              "AA_FROM_YMD": today.strftime("%Y%m%d"),
+              "AA_TO_YMD": end.strftime("%Y%m%d")
+          })
+          sch_rows = (sch_data.get("SchoolSchedule") or [{}, {"row": []}])
+          sch_rows = sch_rows[1].get("row", []) if len(sch_rows) > 1 else []
+          schedule = []
+          for r in sch_rows:
+              ymd = str(r.get("AA_YMD",""))
+              if len(ymd)==8:
+                  label = ymd[4:6] + "/" + ymd[6:8]
+              else:
+                  label = ymd
+              name = str(r.get("EVENT_NM","")).strip()
+              if name:
+                  schedule.append({"date": label, "name": name})
+
+          out = {
+              "updatedAt": datetime.now(kst).isoformat(),
+              "school": {"eduCode": edu, "schoolCode": school, "name": "전주고등학교"},
+              "meal": meal,
+              "schedule": schedule
+          }
+
+          os.makedirs("data", exist_ok=True)
+          with open("data/neis.json","w",encoding="utf-8") as f:
+              json.dump(out,f,ensure_ascii=False,indent=2)
+          PY
+
+      - name: Commit updated data
+        run: |
+          git config user.name "22-hub-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/neis.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Update NEIS data"
+          git push
