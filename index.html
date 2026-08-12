@@ -131,12 +131,12 @@
 
 <script type="module">
 const FIREBASE_CONFIG = {
- apiKey:"",
- authDomain:"",
- projectId:"",
- storageBucket:"",
- messagingSenderId:"",
- appId:""
+ apiKey:"AIzaSyDdmxHNnpnF5wKOdbsu3Wf3OirWGx6GE-s",
+ authDomain:"hub-d3296.firebaseapp.com",
+ projectId:"hub-d3296",
+ storageBucket:"hub-d3296.firebasestorage.app",
+ messagingSenderId:"668430540951",
+ appId:"1:668430540951:web:c64d3f579f5b93d36ac9d2"
 };
 
 const TIMETABLE_RAW="https://raw.githubusercontent.com/ironmins/school_timetable_integration_program/main/student_timetable_2026_2.html";
@@ -206,13 +206,33 @@ async function initFirebase(){
  }catch(e){st.textContent="Firebase 연결 실패: "+e.message;}
 }
 function dd(s){const n=new Date();n.setHours(0,0,0,0);const d=new Date(s+"T00:00:00"),x=Math.ceil((d-n)/86400000);return x===0?"D-DAY":x>0?"D-"+x:"D+"+Math.abs(x)}
-function assessmentHTML(e){return `<div class="event"><div class="eventTop"><div><b>${esc(e.subject)} · ${esc(e.title)}</b><div class="muted" style="font-size:12px;margin-top:4px">${esc(e.date)} · ${dd(e.date)}${e.memo?" · "+esc(e.memo):""}</div></div><span class="badge">${esc(e.type)}</span></div><div class="actions"><button onclick="editAssessment('${e.id}')">수정</button><button onclick="deleteAssessment('${e.id}')">삭제</button></div></div>`}
+function assessmentHTML(e){
+ const writer=e.writer?`<div class="muted" style="font-size:11px;margin-top:5px">작성자 · ${esc(e.writer)}</div>`:"";
+ return `<div class="event"><div class="eventTop"><div><b>${esc(e.subject)} · ${esc(e.title)}</b><div class="muted" style="font-size:12px;margin-top:4px">${esc(e.date)} · ${dd(e.date)}${e.memo?" · "+esc(e.memo):""}</div>${writer}</div><span class="badge">${esc(e.type)}</span></div><div class="actions"><button onclick="editAssessment('${e.id}')">수정</button><button onclick="deleteAssessment('${e.id}')">삭제</button></div></div>`;
+}
 function renderAssessments(){const now=new Date();now.setHours(0,0,0,0);const future=assessments.filter(e=>e.date&&new Date(e.date+"T00:00:00")>=now);document.getElementById("homeAssessments").innerHTML=future.slice(0,5).map(assessmentHTML).join("")||`<div class="note">등록된 수행평가 일정이 없습니다.</div>`;document.getElementById("allAssessments").innerHTML=assessments.map(assessmentHTML).join("")||`<div class="note">등록된 수행평가 일정이 없습니다.</div>`;}
 window.openModal=()=>{["editId","subject","title","date","writer","memo"].forEach(i=>document.getElementById(i).value="");document.getElementById("type").value="수행평가";document.getElementById("modalTitle").textContent="수행평가 일정 추가";document.getElementById("modalBg").classList.add("open");};
 window.closeModal=()=>document.getElementById("modalBg").classList.remove("open");
 window.editAssessment=id=>{const e=assessments.find(x=>x.id===id);if(!e)return;document.getElementById("editId").value=id;["subject","title","date","writer","memo"].forEach(i=>document.getElementById(i).value=e[i]||"");document.getElementById("type").value=e.type||"수행평가";document.getElementById("modalTitle").textContent="수행평가 일정 수정";document.getElementById("modalBg").classList.add("open");};
-window.saveAssessment=async()=>{if(!db){alert("먼저 Firebase를 연결해야 합니다.");return;}const id=document.getElementById("editId").value;const x={subject:subject.value.trim(),type:type.value,title:title.value.trim(),date:date.value,writer:writer.value.trim(),memo:memo.value.trim(),updatedAt:serverTimestamp()};if(!x.subject||!x.title||!x.date){alert("과목, 제목, 날짜는 필수입니다.");return;}if(id)await updateDoc(doc(db,"assessments",id),x);else{x.createdAt=serverTimestamp();await addDoc(collection(db,"assessments"),x);}closeModal();};
-window.deleteAssessment=async id=>{if(db&&confirm("모든 학생 화면에서 이 일정을 삭제할까요?"))await deleteDoc(doc(db,"assessments",id));};
+window.saveAssessment=async()=>{
+ if(!db){alert("Firebase 연결이 아직 완료되지 않았습니다.");return;}
+ const id=document.getElementById("editId").value;
+ const x={subject:subject.value.trim(),type:type.value,title:title.value.trim(),date:date.value,writer:writer.value.trim(),memo:memo.value.trim(),updatedAt:serverTimestamp()};
+ if(!x.subject||!x.title||!x.date){alert("과목, 제목, 날짜는 필수입니다.");return;}
+ try{
+  if(id)await updateDoc(doc(db,"assessments",id),x);
+  else{x.createdAt=serverTimestamp();await addDoc(collection(db,"assessments"),x);}
+  closeModal();
+ }catch(e){
+  alert("저장 실패: "+e.message);
+ }
+};
+window.deleteAssessment=async id=>{
+ if(!db)return;
+ if(!confirm("모든 학생 화면에서 이 일정을 삭제할까요?"))return;
+ try{await deleteDoc(doc(db,"assessments",id));}
+ catch(e){alert("삭제 실패: "+e.message);}
+};
 
 
 function parseBell(period){
