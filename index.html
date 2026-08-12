@@ -248,16 +248,54 @@ function renderAcademicSchedule(){
  const now=new Date();
  now.setHours(0,0,0,0);
 
- const schoolRows=(academicSchedule||[])
+ // 1) NEIS 학사일정 원본
+ let schoolRows=(academicSchedule||[])
   .map(x=>({
    kind:"school",
    date:academicDateISO(x.date),
    displayDate:x.date,
    title:x.name||"학사일정"
   }))
-  .filter(x=>x.date);
+  .filter(x=>x.date)
+  .sort((a,b)=>a.date.localeCompare(b.date));
 
- // 수행평가는 학생의 분반에 해당하는 미래 일정만 합침
+ // 2) 같은 제목이 날짜상 연속되면 하나의 기간으로 압축
+ const compressedSchool=[];
+ for(const row of schoolRows){
+  const last=compressedSchool[compressedSchool.length-1];
+
+  if(last && last.title===row.title){
+   const lastDate=new Date(last.endDate+"T00:00:00");
+   const curDate=new Date(row.date+"T00:00:00");
+   const diff=Math.round((curDate-lastDate)/(1000*60*60*24));
+
+   if(diff===1){
+    last.endDate=row.date;
+    last.endDisplay=row.displayDate;
+    continue;
+   }
+  }
+
+  compressedSchool.push({
+   ...row,
+   startDate:row.date,
+   endDate:row.date,
+   startDisplay:row.displayDate,
+   endDisplay:row.displayDate
+  });
+ }
+
+ const finalSchoolRows=compressedSchool.map(x=>({
+  kind:"school",
+  date:x.startDate,
+  displayDate:
+   x.startDate===x.endDate
+    ?x.startDisplay
+    :`${x.startDisplay}~${x.endDisplay}`,
+  title:x.title
+ }));
+
+ // 3) 수행평가: 현재 선택 학생의 분반에 해당하는 미래 일정
  const assessmentRows=assessments
   .filter(e=>e.date && new Date(e.date+"T00:00:00")>=now && matchesMyGroup(e))
   .map(e=>({
@@ -272,7 +310,8 @@ function renderAcademicSchedule(){
    ].filter(Boolean).join(" · ")
   }));
 
- const merged=[...schoolRows,...assessmentRows]
+ // 4) 학사일정 + 수행평가를 날짜순으로 합침
+ const merged=[...finalSchoolRows,...assessmentRows]
   .sort((a,b)=>a.date.localeCompare(b.date))
   .slice(0,10);
 
@@ -287,6 +326,7 @@ function renderAcademicSchedule(){
     const meta=x.meta
       ?`<div class="muted" style="font-size:11px;margin-top:3px">${esc(x.meta)}</div>`
       :"";
+
     return `<div class="academicRow">
       <b>${esc(x.displayDate)}</b>
       <div style="min-width:0">
