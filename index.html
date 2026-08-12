@@ -99,7 +99,7 @@
 
   <div class="card">
    <div class="kicker">SCHOOL</div>
-   <div class="hero">📅 가까운 학사일정</div>
+   <div class="hero">📅 가까운 일정</div><div class="muted" style="font-size:11px;margin:-5px 0 10px">학사일정 + 내 분반 수행평가</div>
    <div id="academicBox" class="academic"><div class="muted">불러오는 중...</div></div>
   </div>
  </div>
@@ -156,14 +156,20 @@
 <div id="modalBg" class="modalBg"><div class="modal">
 <h2 id="modalTitle">수행평가 일정 추가</h2><input type="hidden" id="editId">
 <div class="form">
-<div><label>과목</label><input id="subject" placeholder="예: 화학" oninput="refreshTargetGroupOptions()"></div><div><label>종류</label><select id="type"><option>수행평가</option><option>과제</option><option>시험</option><option>기타</option></select></div>
+<div><label>과목</label>
+<select id="subject" onchange="onSubjectChanged()">
+ <option value="">과목 선택</option>
+</select>
+<input id="subjectCustom" placeholder="직접 입력" style="display:none;margin-top:7px" oninput="onCustomSubjectInput()">
+</div><div><label>종류</label><select id="type"><option>수행평가</option><option>과제</option><option>시험</option><option>기타</option></select></div>
 <div class="full"><label>대상 분반</label>
 <div id="targetGroupChips" class="groupChips">
  <label class="groupChip"><input type="checkbox" id="targetAll" value="all" onchange="toggleAllGroups(this)">전체</label>
 </div>
-<div id="targetGroupHint" class="muted" style="font-size:11px;margin-top:6px">과목을 입력하면 시간표에서 해당 과목의 알파벳 분반을 자동으로 불러옵니다.</div>
+<div id="targetGroupHint" class="muted" style="font-size:11px;margin-top:6px">과목을 선택하면 실제 시간표의 분반과 담당 선생님을 자동으로 불러옵니다.</div>
 </div>
-<div class="full"><label>담당 선생님(선택)</label><input id="teacher" placeholder="예: 김○○ 선생님"></div>
+<div class="full"><label>담당 선생님</label><input id="teacher" placeholder="과목·분반을 선택하면 자동 입력됩니다.">
+<div id="teacherHint" class="muted" style="font-size:11px;margin-top:6px">시간표의 담당 교사 정보를 사용합니다. 필요하면 직접 수정할 수도 있습니다.</div></div>
 <div class="full"><label>제목</label><input id="title" placeholder="예: 중화적정 보고서"></div><div><label>날짜</label><input id="date" type="date"></div><div><label>작성자(선택)</label><input id="writer"></div><div class="full"><label>메모</label><textarea id="memo"></textarea></div>
 </div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn" onclick="closeModal()">취소</button><button class="btn dark" onclick="saveAssessment()">저장</button></div>
 </div></div>
@@ -196,7 +202,7 @@ import {initializeApp} from "https://www.gstatic.com/firebasejs/12.17.1/firebase
 import {getAuth,signInAnonymously} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 import {getDatabase,ref,push,set,update,remove,onValue} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
-let db=null, assessments=[], allStudents=[], selectedStudent=null, bellSchedule={}, myGroups={}, autoGroups={}, subjectGroupCatalog={}, assessmentFilter="mine";
+let db=null, assessments=[], allStudents=[], selectedStudent=null, bellSchedule={}, myGroups={}, autoGroups={}, subjectGroupCatalog={}, subjectCatalog={}, assessmentFilter="mine", academicSchedule=[];
 
 function esc(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 window.show=id=>{document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));document.getElementById(id).classList.add("active");window.scrollTo({top:0,behavior:"smooth"});};
@@ -217,6 +223,80 @@ window.showMeal=function(kind){
    (meal.calorie?`<div class="mealCal">열량 · ${esc(meal.calorie)}</div>`:"");
 };
 
+
+function academicDateISO(mmdd){
+ const m=String(mmdd||"").match(/^(\d{1,2})\/(\d{1,2})$/);
+ if(!m)return "";
+ const now=new Date();
+ const month=+m[1], day=+m[2];
+ let year=now.getFullYear();
+ let d=new Date(year,month-1,day);
+ const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+
+ // NEIS 데이터는 앞으로 약 60일 범위이므로 연말에 다음 해 일정이면 연도 보정
+ if(d < today && (today-d) > 1000*60*60*24*120){
+  year++;
+  d=new Date(year,month-1,day);
+ }
+ return `${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+}
+
+function renderAcademicSchedule(){
+ const now=new Date();
+ now.setHours(0,0,0,0);
+
+ const schoolRows=(academicSchedule||[])
+  .map(x=>({
+   kind:"school",
+   date:academicDateISO(x.date),
+   displayDate:x.date,
+   title:x.name||"학사일정"
+  }))
+  .filter(x=>x.date);
+
+ // 수행평가는 학생의 분반에 해당하는 미래 일정만 합침
+ const assessmentRows=assessments
+  .filter(e=>e.date && new Date(e.date+"T00:00:00")>=now && matchesMyGroup(e))
+  .map(e=>({
+   kind:"assessment",
+   date:e.date,
+   displayDate:e.date.slice(5).replace("-","/"),
+   title:`${e.subject} · ${e.title}`,
+   meta:[
+    targetLabel(e)!=="전체" ? targetLabel(e) : "",
+    e.teacher||"",
+    dd(e.date)
+   ].filter(Boolean).join(" · ")
+  }));
+
+ const merged=[...schoolRows,...assessmentRows]
+  .sort((a,b)=>a.date.localeCompare(b.date))
+  .slice(0,10);
+
+ const box=document.getElementById("academicBox");
+ if(!box)return;
+
+ box.innerHTML=merged.length
+  ?merged.map(x=>{
+    const badge=x.kind==="assessment"
+      ?`<span class="badge">수행</span>`
+      :`<span class="badge">학사</span>`;
+    const meta=x.meta
+      ?`<div class="muted" style="font-size:11px;margin-top:3px">${esc(x.meta)}</div>`
+      :"";
+    return `<div class="academicRow">
+      <b>${esc(x.displayDate)}</b>
+      <div style="min-width:0">
+       <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+        ${badge}<span>${esc(x.title)}</span>
+       </div>
+       ${meta}
+      </div>
+     </div>`;
+   }).join("")
+  :`<div class="note">가까운 학사일정이나 수행평가가 없습니다.</div>`;
+}
+
 async function loadNeis(){
  try{
   const r=await fetch("./data/neis.json?ts="+Date.now(),{cache:"no-store"});
@@ -235,10 +315,8 @@ async function loadNeis(){
   else if(!neisMealData.lunch && !neisMealData.breakfast && neisMealData.dinner) first="dinner";
   showMeal(first);
 
-  const rows=d.schedule||[];
-  document.getElementById("academicBox").innerHTML=rows.length
-    ?rows.slice(0,8).map(x=>`<div class="academicRow"><b>${esc(x.date)}</b><div>${esc(x.name)}</div></div>`).join("")
-    :`<div class="note">가까운 학사일정이 없습니다.</div>`;
+  academicSchedule=d.schedule||[];
+  renderAcademicSchedule();
  }catch(e){
   document.getElementById("mealBox").innerHTML=`<div class="note">급식 데이터 준비 중</div>`;
   document.getElementById("academicBox").innerHTML=`<div class="note">학사일정 데이터 준비 중</div>`;
@@ -265,6 +343,7 @@ async function initFirebase(){
       .map(([id,data])=>({id,...data}))
       .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
     renderAssessments();
+    renderAcademicSchedule();
    },
    err=>{
     st.textContent="수행평가 불러오기 실패: "+err.message;
@@ -348,14 +427,42 @@ function getCatalogGroups(subject){
 
 function buildGroupCatalog(){
  subjectGroupCatalog={};
+ subjectCatalog={};
+
  for(const s of allStudents){
   for(const day of ["월","화","수","목","금"]){
    for(const cell of (s.schedule?.[day]||[])){
     const c=parseCell(cell||"");
-    if(!c.subject||!c.group)continue;
+    if(!c.subject)continue;
+
     const key=normSubject(c.subject);
-    if(!subjectGroupCatalog[key])subjectGroupCatalog[key]=new Set();
-    subjectGroupCatalog[key].add(normGroup(c.group));
+    if(!subjectCatalog[key]){
+     subjectCatalog[key]={
+      name:c.subject,
+      groups:new Set(),
+      teachersByGroup:{},
+      allTeachers:new Set()
+     };
+    }
+
+    const item=subjectCatalog[key];
+
+    // 더 짧고 자연스러운 표기명을 우선
+    if(c.subject.length < item.name.length)item.name=c.subject;
+
+    if(c.group){
+     const g=normGroup(c.group);
+     item.groups.add(g);
+     if(!subjectGroupCatalog[key])subjectGroupCatalog[key]=new Set();
+     subjectGroupCatalog[key].add(g);
+     if(!item.teachersByGroup[g])item.teachersByGroup[g]=new Set();
+     if(c.teacher)item.teachersByGroup[g].add(c.teacher);
+    }else{
+     if(!item.teachersByGroup.ALL)item.teachersByGroup.ALL=new Set();
+     if(c.teacher)item.teachersByGroup.ALL.add(c.teacher);
+    }
+
+    if(c.teacher)item.allTeachers.add(c.teacher);
    }
   }
  }
@@ -373,25 +480,176 @@ function detectGroupsForStudent(s){
  return found;
 }
 
+
+function getSubjectValue(){
+ const sel=document.getElementById("subject");
+ if(!sel)return "";
+ if(sel.value==="__CUSTOM__")return document.getElementById("subjectCustom")?.value.trim()||"";
+ return sel.value.trim();
+}
+
+function populateSubjectOptions(){
+ const sel=document.getElementById("subject");
+ if(!sel)return;
+ const current=getSubjectValue();
+
+ const subjects=Object.values(subjectCatalog)
+  .map(x=>x.name)
+  .filter(Boolean)
+  .sort((a,b)=>a.localeCompare(b,"ko"));
+
+ sel.innerHTML=
+  `<option value="">과목 선택</option>`+
+  subjects.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join("")+
+  `<option value="__CUSTOM__">＋ 직접 입력</option>`;
+
+ if(current)setSubjectValue(current);
+}
+
+function setSubjectValue(value){
+ const sel=document.getElementById("subject");
+ const custom=document.getElementById("subjectCustom");
+ if(!sel||!custom)return;
+
+ const key=normSubject(value);
+ const found=Object.values(subjectCatalog).find(x=>normSubject(x.name)===key);
+
+ if(found){
+  sel.value=found.name;
+  custom.value="";
+  custom.style.display="none";
+ }else if(value){
+  sel.value="__CUSTOM__";
+  custom.value=value;
+  custom.style.display="";
+ }else{
+  sel.value="";
+  custom.value="";
+  custom.style.display="none";
+ }
+}
+
+window.onSubjectChanged=function(){
+ const sel=document.getElementById("subject");
+ const custom=document.getElementById("subjectCustom");
+ custom.style.display=sel.value==="__CUSTOM__"?"":"none";
+ if(sel.value!=="__CUSTOM__")custom.value="";
+ refreshTargetGroupOptions(["ALL"]);
+ updateTeacherFromTimetable();
+};
+
+window.onCustomSubjectInput=function(){
+ refreshTargetGroupOptions();
+ updateTeacherFromTimetable();
+};
+
+function getSubjectCatalogItem(subject){
+ const key=normSubject(subject);
+ return subjectCatalog[key]||null;
+}
+
+function selectedTargetGroups(){
+ if(document.getElementById("targetAll")?.checked)return ["ALL"];
+ const groups=[...document.querySelectorAll('input[name="targetGroup"]:checked')]
+  .map(x=>normGroup(x.value))
+  .filter(Boolean);
+ return groups.length?groups:["ALL"];
+}
+
+function autoTeacherText(subject,groups){
+ const item=getSubjectCatalogItem(subject);
+ if(!item)return {text:"",hint:"시간표에서 이 과목을 찾지 못했습니다. 직접 입력할 수 있습니다."};
+
+ const target=(groups||["ALL"]).map(normGroup);
+
+ // 전체 대상: 교사가 한 명이면 이름만, 여러 명이면 분반별로 표시
+ if(target.includes("ALL")){
+  const all=[...item.allTeachers].filter(Boolean);
+  if(all.length===1)return {text:all[0],hint:"시간표에서 담당 교사를 자동으로 찾았습니다."};
+
+  const groupParts=[...item.groups].sort().map(g=>{
+   const teachers=[...(item.teachersByGroup[g]||[])].filter(Boolean);
+   return teachers.length?`${g}: ${teachers.join(" / ")}`:"";
+  }).filter(Boolean);
+
+  if(groupParts.length){
+   return {text:groupParts.join(" · "),hint:"분반별 담당 교사가 달라 분반별로 표시했습니다."};
+  }
+  return {text:all.join(" / "),hint:all.length?"시간표의 담당 교사들을 표시했습니다.":"담당 교사 정보가 없습니다."};
+ }
+
+ // 특정 분반 선택
+ const parts=[];
+ const unique=new Set();
+ for(const g of target){
+  let teachers=[...(item.teachersByGroup[g]||[])].filter(Boolean);
+
+  // 분반별 교사가 없으면 일반 교사 정보 사용
+  if(!teachers.length)teachers=[...(item.teachersByGroup.ALL||[])].filter(Boolean);
+
+  teachers.forEach(t=>unique.add(t));
+  if(teachers.length)parts.push({group:g,text:teachers.join(" / ")});
+ }
+
+ if(unique.size===1){
+  return {text:[...unique][0],hint:`선택한 ${target.join(", ")}분반의 담당 교사를 자동 입력했습니다.`};
+ }
+ if(parts.length){
+  return {text:parts.map(x=>`${x.group}: ${x.text}`).join(" · "),hint:"선택한 분반마다 담당 교사가 달라 분반별로 표시했습니다."};
+ }
+ return {text:"",hint:"선택한 분반의 담당 교사 정보가 없습니다. 직접 입력할 수 있습니다."};
+}
+
+window.updateTeacherFromTimetable=function(){
+ const teacher=document.getElementById("teacher");
+ const hint=document.getElementById("teacherHint");
+ if(!teacher)return;
+
+ const subject=getSubjectValue();
+ if(!subject){
+  teacher.value="";
+  if(hint)hint.textContent="과목을 선택하면 시간표에서 담당 교사를 자동으로 찾습니다.";
+  return;
+ }
+
+ const result=autoTeacherText(subject,selectedTargetGroups());
+ teacher.value=result.text;
+ if(hint)hint.textContent=result.hint;
+};
+
 window.refreshTargetGroupOptions=function(selected=[]){
  const holder=document.getElementById("targetGroupChips");
  if(!holder)return;
+
  const previous=new Set(
   selected.length
    ?selected.map(normGroup)
    :[...document.querySelectorAll('input[name="targetGroup"]:checked')].map(b=>normGroup(b.value))
  );
+
+ const subject=getSubjectValue();
+ const item=getSubjectCatalogItem(subject);
+ const exact=getCatalogGroups(subject);
+
+ // 시간표에 존재하는 과목은 실제 분반만, 직접입력 과목만 A~H fallback
+ const groups=exact.length
+  ?exact
+  :(item?[]:["A","B","C","D","E","F","G","H"]);
+
  const allChecked=document.getElementById("targetAll")?.checked ?? true;
- const groups=getCatalogGroups(document.getElementById("subject")?.value||"");
- const fallback=groups.length?groups:["A","B","C","D","E","F","G","H"];
+
  holder.innerHTML=
-  `<label class="groupChip"><input type="checkbox" id="targetAll" value="all" onchange="toggleAllGroups(this)" ${allChecked||previous.has("ALL")?"checked":""}>전체</label>`+
-  fallback.map(g=>`<label class="groupChip"><input type="checkbox" name="targetGroup" value="${esc(g)}" ${previous.has(g)?"checked":""}>${esc(g)}분반</label>`).join("");
- const exact=getCatalogGroups(document.getElementById("subject")?.value||"");
- document.getElementById("targetGroupHint").textContent=
-  exact.length
-   ?`시간표에서 확인된 분반: ${exact.join(", ")}`
-   :"과목을 입력하면 시간표에서 해당 과목의 알파벳 분반을 자동으로 불러옵니다.";
+  `<label class="groupChip"><input type="checkbox" id="targetAll" value="ALL" onchange="toggleAllGroups(this);updateTeacherFromTimetable()" ${allChecked||previous.has("ALL")?"checked":""}>전체</label>`+
+  groups.map(g=>`<label class="groupChip"><input type="checkbox" name="targetGroup" value="${esc(g)}" ${previous.has(g)?"checked":""}>${esc(g)}분반</label>`).join("");
+
+ const hint=document.getElementById("targetGroupHint");
+ if(exact.length){
+  hint.textContent=`시간표에서 확인된 분반: ${exact.join(", ")}`;
+ }else if(item){
+  hint.textContent="이 과목은 시간표에서 별도 분반 없이 운영되는 과목입니다.";
+ }else{
+  hint.textContent="직접 입력한 과목입니다. 필요한 분반을 선택하세요.";
+ }
 };
 
 function assessmentHTML(e){
@@ -420,6 +678,9 @@ function renderAssessments(){
  if(notice)notice.innerHTML=noticeHTML;
  const homeNotice=document.getElementById("homeGroupNotice");
  if(homeNotice)homeNotice.innerHTML=noticeHTML;
+
+ // 학생 변경/분반 변경/수행평가 수정 시 학사일정 카드도 함께 갱신
+ renderAcademicSchedule();
 }
 
 window.setAssessmentFilter=mode=>{
@@ -435,8 +696,9 @@ window.toggleAllGroups=el=>{
 };
 
 document.addEventListener("change",e=>{
- if(e.target.matches('input[name="targetGroup"]')&&e.target.checked){
-  document.getElementById("targetAll").checked=false;
+ if(e.target.matches('input[name="targetGroup"]')){
+  if(e.target.checked)document.getElementById("targetAll").checked=false;
+  updateTeacherFromTimetable();
  }
 });
 
@@ -444,6 +706,7 @@ function resetTargetGroups(){
  refreshTargetGroupOptions([]);
  document.getElementById("targetAll").checked=true;
  document.querySelectorAll('input[name="targetGroup"]').forEach(b=>b.checked=false);
+ updateTeacherFromTimetable();
 }
 
 function setTargetGroups(groups){
@@ -452,13 +715,16 @@ function setTargetGroups(groups){
  document.getElementById("targetAll").checked=gs.includes("ALL");
  document.querySelectorAll('input[name="targetGroup"]').forEach(b=>b.checked=gs.includes(normGroup(b.value)));
  if(!document.getElementById("targetAll").checked&&!document.querySelector('input[name="targetGroup"]:checked'))resetTargetGroups();
+ updateTeacherFromTimetable();
 }
 
 window.openModal=()=>{
- ["editId","subject","teacher","title","date","writer","memo"].forEach(i=>document.getElementById(i).value="");
+ ["editId","teacher","title","date","writer","memo"].forEach(i=>document.getElementById(i).value="");
+ setSubjectValue("");
  document.getElementById("type").value="수행평가";
  refreshTargetGroupOptions(["ALL"]);
  resetTargetGroups();
+ document.getElementById("teacherHint").textContent="과목을 선택하면 시간표에서 담당 교사를 자동으로 찾습니다.";
  document.getElementById("modalTitle").textContent="수행평가 일정 추가";
  document.getElementById("modalBg").classList.add("open");
 };
@@ -467,9 +733,13 @@ window.closeModal=()=>document.getElementById("modalBg").classList.remove("open"
 window.editAssessment=id=>{
  const e=assessments.find(x=>x.id===id);if(!e)return;
  document.getElementById("editId").value=id;
- ["subject","teacher","title","date","writer","memo"].forEach(i=>document.getElementById(i).value=e[i]||"");
+ setSubjectValue(e.subject||"");
+ ["title","date","writer","memo"].forEach(i=>document.getElementById(i).value=e[i]||"");
  document.getElementById("type").value=e.type||"수행평가";
+ refreshTargetGroupOptions(normalizeTargetGroups(e));
  setTargetGroups(normalizeTargetGroups(e));
+ // 저장된 교사명이 있으면 기존 값을 우선 유지
+ document.getElementById("teacher").value=e.teacher||document.getElementById("teacher").value;
  document.getElementById("modalTitle").textContent="수행평가 일정 수정";
  document.getElementById("modalBg").classList.add("open");
 };
@@ -481,7 +751,7 @@ window.saveAssessment=async()=>{
  const targetGroups=document.getElementById("targetAll").checked||!selectedGroups.length?["ALL"]:selectedGroups;
  const now=Date.now();
  const x={
-  subject:subject.value.trim(),
+  subject:getSubjectValue(),
   type:type.value,
   targetGroups,
   teacher:teacher.value.trim(),
@@ -717,7 +987,7 @@ function parseCell(html){
 }
 async function loadTimetable(){
  try{
-  const t=await(await fetch(TIMETABLE_RAW)).text();allStudents=extractJSON(t,"allStudents","allTeacherSchedules").filter(s=>String(s.homeroom||"").trim()===CLASS_FILTER);bellSchedule=extractJSON(t,"bellSchedule","weeklyScheduleData");allStudents.forEach(s=>s.uniqueId=s.uniqueId||(s.name+"||"+s.homeroom+"||"+s.number));buildGroupCatalog();refreshTargetGroupOptions(["ALL"]);setupSearch();
+  const t=await(await fetch(TIMETABLE_RAW)).text();allStudents=extractJSON(t,"allStudents","allTeacherSchedules").filter(s=>String(s.homeroom||"").trim()===CLASS_FILTER);bellSchedule=extractJSON(t,"bellSchedule","weeklyScheduleData");allStudents.forEach(s=>s.uniqueId=s.uniqueId||(s.name+"||"+s.homeroom+"||"+s.number));buildGroupCatalog();populateSubjectOptions();refreshTargetGroupOptions(["ALL"]);setupSearch();
   const saved=localStorage.getItem("22hub_student"),s=allStudents.find(x=>x.uniqueId===saved);if(s)selectStudent(s);
  }catch(e){document.getElementById("todayLessons").innerHTML=`<div class="note">시간표 연동 실패</div>`;}
 }
