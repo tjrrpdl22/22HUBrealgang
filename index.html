@@ -166,10 +166,13 @@
 <div id="targetGroupChips" class="groupChips">
  <label class="groupChip"><input type="checkbox" id="targetAll" value="all" onchange="toggleAllGroups(this)">전체</label>
 </div>
-<div id="targetGroupHint" class="muted" style="font-size:11px;margin-top:6px">과목을 선택하면 실제 시간표의 분반과 담당 선생님을 자동으로 불러옵니다.</div>
+<div id="targetGroupHint" class="muted" style="font-size:11px;margin-top:6px">과목을 선택하면 실제 시간표의 분반과 해당 과목 담당 선생님 목록을 불러옵니다.</div>
 </div>
-<div class="full"><label>담당 선생님</label><input id="teacher" placeholder="과목·분반을 선택하면 자동 입력됩니다.">
-<div id="teacherHint" class="muted" style="font-size:11px;margin-top:6px">시간표의 담당 교사 정보를 사용합니다. 필요하면 직접 수정할 수도 있습니다.</div></div>
+<div class="full"><label>담당 선생님</label>
+<select id="teacher">
+ <option value="">선생님 선택</option>
+</select>
+<div id="teacherHint" class="muted" style="font-size:11px;margin-top:6px">과목을 선택하면 그 과목을 담당하는 선생님만 표시됩니다.</div></div>
 <div class="full"><label>제목</label><input id="title" placeholder="예: 중화적정 보고서"></div><div><label>날짜</label><input id="date" type="date"></div><div><label>작성자(선택)</label><input id="writer"></div><div class="full"><label>메모</label><textarea id="memo"></textarea></div>
 </div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn" onclick="closeModal()">취소</button><button class="btn dark" onclick="saveAssessment()">저장</button></div>
 </div></div>
@@ -535,12 +538,12 @@ window.onSubjectChanged=function(){
  custom.style.display=sel.value==="__CUSTOM__"?"":"none";
  if(sel.value!=="__CUSTOM__")custom.value="";
  refreshTargetGroupOptions(["ALL"]);
- updateTeacherFromTimetable();
+ refreshTeacherOptions();
 };
 
 window.onCustomSubjectInput=function(){
  refreshTargetGroupOptions();
- updateTeacherFromTimetable();
+ refreshTeacherOptions();
 };
 
 function getSubjectCatalogItem(subject){
@@ -556,65 +559,54 @@ function selectedTargetGroups(){
  return groups.length?groups:["ALL"];
 }
 
-function autoTeacherText(subject,groups){
+function getSubjectTeachers(subject){
  const item=getSubjectCatalogItem(subject);
- if(!item)return {text:"",hint:"시간표에서 이 과목을 찾지 못했습니다. 직접 입력할 수 있습니다."};
+ if(!item)return [];
 
- const target=(groups||["ALL"]).map(normGroup);
-
- // 전체 대상: 교사가 한 명이면 이름만, 여러 명이면 분반별로 표시
- if(target.includes("ALL")){
-  const all=[...item.allTeachers].filter(Boolean);
-  if(all.length===1)return {text:all[0],hint:"시간표에서 담당 교사를 자동으로 찾았습니다."};
-
-  const groupParts=[...item.groups].sort().map(g=>{
-   const teachers=[...(item.teachersByGroup[g]||[])].filter(Boolean);
-   return teachers.length?`${g}: ${teachers.join(" / ")}`:"";
-  }).filter(Boolean);
-
-  if(groupParts.length){
-   return {text:groupParts.join(" · "),hint:"분반별 담당 교사가 달라 분반별로 표시했습니다."};
-  }
-  return {text:all.join(" / "),hint:all.length?"시간표의 담당 교사들을 표시했습니다.":"담당 교사 정보가 없습니다."};
- }
-
- // 특정 분반 선택
- const parts=[];
- const unique=new Set();
- for(const g of target){
-  let teachers=[...(item.teachersByGroup[g]||[])].filter(Boolean);
-
-  // 분반별 교사가 없으면 일반 교사 정보 사용
-  if(!teachers.length)teachers=[...(item.teachersByGroup.ALL||[])].filter(Boolean);
-
-  teachers.forEach(t=>unique.add(t));
-  if(teachers.length)parts.push({group:g,text:teachers.join(" / ")});
- }
-
- if(unique.size===1){
-  return {text:[...unique][0],hint:`선택한 ${target.join(", ")}분반의 담당 교사를 자동 입력했습니다.`};
- }
- if(parts.length){
-  return {text:parts.map(x=>`${x.group}: ${x.text}`).join(" · "),hint:"선택한 분반마다 담당 교사가 달라 분반별로 표시했습니다."};
- }
- return {text:"",hint:"선택한 분반의 담당 교사 정보가 없습니다. 직접 입력할 수 있습니다."};
+ // 해당 과목을 실제로 담당하는 교사 전체
+ return [...item.allTeachers]
+  .filter(Boolean)
+  .sort((a,b)=>a.localeCompare(b,"ko"));
 }
 
-window.updateTeacherFromTimetable=function(){
- const teacher=document.getElementById("teacher");
+window.refreshTeacherOptions=function(savedValue=""){
+ const sel=document.getElementById("teacher");
  const hint=document.getElementById("teacherHint");
- if(!teacher)return;
+ if(!sel)return;
 
  const subject=getSubjectValue();
- if(!subject){
-  teacher.value="";
-  if(hint)hint.textContent="과목을 선택하면 시간표에서 담당 교사를 자동으로 찾습니다.";
-  return;
+ const teachers=getSubjectTeachers(subject);
+ const previous=savedValue || sel.value || "";
+
+ sel.innerHTML='<option value="">선생님 선택</option>';
+
+ for(const t of teachers){
+  const opt=document.createElement("option");
+  opt.value=t;
+  opt.textContent=t;
+  sel.appendChild(opt);
  }
 
- const result=autoTeacherText(subject,selectedTargetGroups());
- teacher.value=result.text;
- if(hint)hint.textContent=result.hint;
+ // 예전 데이터 등 현재 시간표 목록에 없는 값은 수정 시 보존
+ if(previous && !teachers.includes(previous)){
+  const opt=document.createElement("option");
+  opt.value=previous;
+  opt.textContent=previous+" (기존값)";
+  sel.appendChild(opt);
+ }
+
+ if(previous)sel.value=previous;
+ else if(teachers.length===1)sel.value=teachers[0];
+
+ if(!subject){
+  if(hint)hint.textContent="과목을 선택하면 그 과목을 담당하는 선생님만 표시됩니다.";
+ }else if(!teachers.length){
+  if(hint)hint.textContent="시간표에서 이 과목의 담당 선생님을 찾지 못했습니다.";
+ }else if(teachers.length===1){
+  if(hint)hint.textContent=`${teachers[0]} 선생님으로 자동 선택되었습니다.`;
+ }else{
+  if(hint)hint.textContent=`이 과목 담당 선생님 ${teachers.length}명 중에서 선택하세요.`;
+ }
 };
 
 window.refreshTargetGroupOptions=function(selected=[]){
@@ -639,7 +631,7 @@ window.refreshTargetGroupOptions=function(selected=[]){
  const allChecked=document.getElementById("targetAll")?.checked ?? true;
 
  holder.innerHTML=
-  `<label class="groupChip"><input type="checkbox" id="targetAll" value="ALL" onchange="toggleAllGroups(this);updateTeacherFromTimetable()" ${allChecked||previous.has("ALL")?"checked":""}>전체</label>`+
+  `<label class="groupChip"><input type="checkbox" id="targetAll" value="ALL" onchange="toggleAllGroups(this)" ${allChecked||previous.has("ALL")?"checked":""}>전체</label>`+
   groups.map(g=>`<label class="groupChip"><input type="checkbox" name="targetGroup" value="${esc(g)}" ${previous.has(g)?"checked":""}>${esc(g)}분반</label>`).join("");
 
  const hint=document.getElementById("targetGroupHint");
@@ -698,7 +690,6 @@ window.toggleAllGroups=el=>{
 document.addEventListener("change",e=>{
  if(e.target.matches('input[name="targetGroup"]')){
   if(e.target.checked)document.getElementById("targetAll").checked=false;
-  updateTeacherFromTimetable();
  }
 });
 
@@ -706,7 +697,6 @@ function resetTargetGroups(){
  refreshTargetGroupOptions([]);
  document.getElementById("targetAll").checked=true;
  document.querySelectorAll('input[name="targetGroup"]').forEach(b=>b.checked=false);
- updateTeacherFromTimetable();
 }
 
 function setTargetGroups(groups){
@@ -715,16 +705,15 @@ function setTargetGroups(groups){
  document.getElementById("targetAll").checked=gs.includes("ALL");
  document.querySelectorAll('input[name="targetGroup"]').forEach(b=>b.checked=gs.includes(normGroup(b.value)));
  if(!document.getElementById("targetAll").checked&&!document.querySelector('input[name="targetGroup"]:checked'))resetTargetGroups();
- updateTeacherFromTimetable();
 }
 
 window.openModal=()=>{
- ["editId","teacher","title","date","writer","memo"].forEach(i=>document.getElementById(i).value="");
+ ["editId","title","date","writer","memo"].forEach(i=>document.getElementById(i).value="");
  setSubjectValue("");
  document.getElementById("type").value="수행평가";
  refreshTargetGroupOptions(["ALL"]);
  resetTargetGroups();
- document.getElementById("teacherHint").textContent="과목을 선택하면 시간표에서 담당 교사를 자동으로 찾습니다.";
+ refreshTeacherOptions();
  document.getElementById("modalTitle").textContent="수행평가 일정 추가";
  document.getElementById("modalBg").classList.add("open");
 };
@@ -738,8 +727,7 @@ window.editAssessment=id=>{
  document.getElementById("type").value=e.type||"수행평가";
  refreshTargetGroupOptions(normalizeTargetGroups(e));
  setTargetGroups(normalizeTargetGroups(e));
- // 저장된 교사명이 있으면 기존 값을 우선 유지
- document.getElementById("teacher").value=e.teacher||document.getElementById("teacher").value;
+ refreshTeacherOptions(e.teacher||"");
  document.getElementById("modalTitle").textContent="수행평가 일정 수정";
  document.getElementById("modalBg").classList.add("open");
 };
@@ -987,7 +975,7 @@ function parseCell(html){
 }
 async function loadTimetable(){
  try{
-  const t=await(await fetch(TIMETABLE_RAW)).text();allStudents=extractJSON(t,"allStudents","allTeacherSchedules").filter(s=>String(s.homeroom||"").trim()===CLASS_FILTER);bellSchedule=extractJSON(t,"bellSchedule","weeklyScheduleData");allStudents.forEach(s=>s.uniqueId=s.uniqueId||(s.name+"||"+s.homeroom+"||"+s.number));buildGroupCatalog();populateSubjectOptions();refreshTargetGroupOptions(["ALL"]);setupSearch();
+  const t=await(await fetch(TIMETABLE_RAW)).text();allStudents=extractJSON(t,"allStudents","allTeacherSchedules").filter(s=>String(s.homeroom||"").trim()===CLASS_FILTER);bellSchedule=extractJSON(t,"bellSchedule","weeklyScheduleData");allStudents.forEach(s=>s.uniqueId=s.uniqueId||(s.name+"||"+s.homeroom+"||"+s.number));buildGroupCatalog();populateSubjectOptions();refreshTargetGroupOptions(["ALL"]);refreshTeacherOptions();setupSearch();
   const saved=localStorage.getItem("22hub_student"),s=allStudents.find(x=>x.uniqueId===saved);if(s)selectStudent(s);
  }catch(e){document.getElementById("todayLessons").innerHTML=`<div class="note">시간표 연동 실패</div>`;}
 }
