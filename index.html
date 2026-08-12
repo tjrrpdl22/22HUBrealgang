@@ -125,6 +125,7 @@
 <h2 id="modalTitle">수행평가 일정 추가</h2><input type="hidden" id="editId">
 <div class="form">
 <div><label>과목</label><input id="subject" placeholder="예: 화학"></div><div><label>종류</label><select id="type"><option>수행평가</option><option>과제</option><option>시험</option><option>기타</option></select></div>
+<div><label>분반(선택)</label><input id="classGroup" placeholder="예: 3분반"></div><div><label>담당 선생님(선택)</label><input id="teacher" placeholder="예: 김○○ 선생님"></div>
 <div class="full"><label>제목</label><input id="title" placeholder="예: 중화적정 보고서"></div><div><label>날짜</label><input id="date" type="date"></div><div><label>작성자(선택)</label><input id="writer"></div><div class="full"><label>메모</label><textarea id="memo"></textarea></div>
 </div><div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn" onclick="closeModal()">취소</button><button class="btn dark" onclick="saveAssessment()">저장</button></div>
 </div></div>
@@ -227,13 +228,15 @@ async function initFirebase(){
 }
 function dd(s){const n=new Date();n.setHours(0,0,0,0);const d=new Date(s+"T00:00:00"),x=Math.ceil((d-n)/86400000);return x===0?"D-DAY":x>0?"D-"+x:"D+"+Math.abs(x)}
 function assessmentHTML(e){
+ const classInfo=[e.classGroup,e.teacher].filter(Boolean).map(esc).join(" · ");
+ const classLine=classInfo?`<div class="muted" style="font-size:12px;margin-top:4px">🏫 ${classInfo}</div>`:"";
  const writer=e.writer?`<div class="muted" style="font-size:11px;margin-top:5px">작성자 · ${esc(e.writer)}</div>`:"";
- return `<div class="event"><div class="eventTop"><div><b>${esc(e.subject)} · ${esc(e.title)}</b><div class="muted" style="font-size:12px;margin-top:4px">${esc(e.date)} · ${dd(e.date)}${e.memo?" · "+esc(e.memo):""}</div>${writer}</div><span class="badge">${esc(e.type)}</span></div><div class="actions"><button onclick="editAssessment('${e.id}')">수정</button><button onclick="deleteAssessment('${e.id}')">삭제</button></div></div>`;
+ return `<div class="event"><div class="eventTop"><div><b>${esc(e.subject)} · ${esc(e.title)}</b>${classLine}<div class="muted" style="font-size:12px;margin-top:4px">${esc(e.date)} · ${dd(e.date)}${e.memo?" · "+esc(e.memo):""}</div>${writer}</div><span class="badge">${esc(e.type)}</span></div><div class="actions"><button onclick="editAssessment('${e.id}')">수정</button><button onclick="deleteAssessment('${e.id}')">삭제</button></div></div>`;
 }
 function renderAssessments(){const now=new Date();now.setHours(0,0,0,0);const future=assessments.filter(e=>e.date&&new Date(e.date+"T00:00:00")>=now);document.getElementById("homeAssessments").innerHTML=future.slice(0,5).map(assessmentHTML).join("")||`<div class="note">등록된 수행평가 일정이 없습니다.</div>`;document.getElementById("allAssessments").innerHTML=assessments.map(assessmentHTML).join("")||`<div class="note">등록된 수행평가 일정이 없습니다.</div>`;}
-window.openModal=()=>{["editId","subject","title","date","writer","memo"].forEach(i=>document.getElementById(i).value="");document.getElementById("type").value="수행평가";document.getElementById("modalTitle").textContent="수행평가 일정 추가";document.getElementById("modalBg").classList.add("open");};
+window.openModal=()=>{["editId","subject","classGroup","teacher","title","date","writer","memo"].forEach(i=>document.getElementById(i).value="");document.getElementById("type").value="수행평가";document.getElementById("modalTitle").textContent="수행평가 일정 추가";document.getElementById("modalBg").classList.add("open");};
 window.closeModal=()=>document.getElementById("modalBg").classList.remove("open");
-window.editAssessment=id=>{const e=assessments.find(x=>x.id===id);if(!e)return;document.getElementById("editId").value=id;["subject","title","date","writer","memo"].forEach(i=>document.getElementById(i).value=e[i]||"");document.getElementById("type").value=e.type||"수행평가";document.getElementById("modalTitle").textContent="수행평가 일정 수정";document.getElementById("modalBg").classList.add("open");};
+window.editAssessment=id=>{const e=assessments.find(x=>x.id===id);if(!e)return;document.getElementById("editId").value=id;["subject","classGroup","teacher","title","date","writer","memo"].forEach(i=>document.getElementById(i).value=e[i]||"");document.getElementById("type").value=e.type||"수행평가";document.getElementById("modalTitle").textContent="수행평가 일정 수정";document.getElementById("modalBg").classList.add("open");};
 window.saveAssessment=async()=>{
  if(!db){alert("Firebase 연결이 아직 완료되지 않았습니다.");return;}
  const id=document.getElementById("editId").value;
@@ -241,6 +244,8 @@ window.saveAssessment=async()=>{
  const x={
   subject:subject.value.trim(),
   type:type.value,
+  classGroup:classGroup.value.trim(),
+  teacher:teacher.value.trim(),
   title:title.value.trim(),
   date:date.value,
   writer:writer.value.trim(),
