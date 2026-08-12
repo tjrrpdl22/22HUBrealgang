@@ -133,6 +133,7 @@
 const FIREBASE_CONFIG = {
  apiKey:"AIzaSyDdmxHNnpnF5wKOdbsu3Wf3OirWGx6GE-s",
  authDomain:"hub-d3296.firebaseapp.com",
+ databaseURL:"https://hub-d3296-default-rtdb.firebaseio.com",
  projectId:"hub-d3296",
  storageBucket:"hub-d3296.firebasestorage.app",
  messagingSenderId:"668430540951",
@@ -144,7 +145,7 @@ const CLASS_FILTER="2-2";
 
 import {initializeApp} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
 import {getAuth,signInAnonymously} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
-import {getFirestore,collection,addDoc,updateDoc,deleteDoc,doc,onSnapshot,query,orderBy,serverTimestamp} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
+import {getDatabase,ref,push,set,update,remove,onValue} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-database.js";
 
 let db=null, assessments=[], allStudents=[], selectedStudent=null, bellSchedule={};
 
@@ -195,15 +196,34 @@ async function loadNeis(){
  }
 }
 
-function firebaseReady(){return FIREBASE_CONFIG.apiKey&&FIREBASE_CONFIG.projectId&&FIREBASE_CONFIG.appId}
+function firebaseReady(){return FIREBASE_CONFIG.apiKey&&FIREBASE_CONFIG.projectId&&FIREBASE_CONFIG.appId&&FIREBASE_CONFIG.databaseURL}
 async function initFirebase(){
  const st=document.getElementById("firebaseStatus");
  if(!firebaseReady()){st.textContent="Firebase 연결 전 · 현재 수행평가 공동 편집은 비활성화";renderAssessments();return;}
  try{
-  const app=initializeApp(FIREBASE_CONFIG),auth=getAuth(app);db=getFirestore(app);await signInAnonymously(auth);
+  const app=initializeApp(FIREBASE_CONFIG);
+  const auth=getAuth(app);
+  await signInAnonymously(auth);
+  db=getDatabase(app);
+
   st.textContent="실시간 공동 편집 연결됨";
-  onSnapshot(query(collection(db,"assessments"),orderBy("date","asc")),snap=>{assessments=snap.docs.map(d=>({id:d.id,...d.data()}));renderAssessments();});
- }catch(e){st.textContent="Firebase 연결 실패: "+e.message;}
+
+  onValue(
+   ref(db,"assessments"),
+   snap=>{
+    const raw=snap.val()||{};
+    assessments=Object.entries(raw)
+      .map(([id,data])=>({id,...data}))
+      .sort((a,b)=>String(a.date||"").localeCompare(String(b.date||"")));
+    renderAssessments();
+   },
+   err=>{
+    st.textContent="수행평가 불러오기 실패: "+err.message;
+   }
+  );
+ }catch(e){
+  st.textContent="Firebase 연결 실패: "+e.message;
+ }
 }
 function dd(s){const n=new Date();n.setHours(0,0,0,0);const d=new Date(s+"T00:00:00"),x=Math.ceil((d-n)/86400000);return x===0?"D-DAY":x>0?"D-"+x:"D+"+Math.abs(x)}
 function assessmentHTML(e){
@@ -217,21 +237,42 @@ window.editAssessment=id=>{const e=assessments.find(x=>x.id===id);if(!e)return;d
 window.saveAssessment=async()=>{
  if(!db){alert("Firebase 연결이 아직 완료되지 않았습니다.");return;}
  const id=document.getElementById("editId").value;
- const x={subject:subject.value.trim(),type:type.value,title:title.value.trim(),date:date.value,writer:writer.value.trim(),memo:memo.value.trim(),updatedAt:serverTimestamp()};
- if(!x.subject||!x.title||!x.date){alert("과목, 제목, 날짜는 필수입니다.");return;}
+ const now=Date.now();
+ const x={
+  subject:subject.value.trim(),
+  type:type.value,
+  title:title.value.trim(),
+  date:date.value,
+  writer:writer.value.trim(),
+  memo:memo.value.trim(),
+  updatedAt:now
+ };
+ if(!x.subject||!x.title||!x.date){
+  alert("과목, 제목, 날짜는 필수입니다.");
+  return;
+ }
  try{
-  if(id)await updateDoc(doc(db,"assessments",id),x);
-  else{x.createdAt=serverTimestamp();await addDoc(collection(db,"assessments"),x);}
+  if(id){
+   await update(ref(db,"assessments/"+id),x);
+  }else{
+   x.createdAt=now;
+   const newItem=push(ref(db,"assessments"));
+   await set(newItem,x);
+  }
   closeModal();
  }catch(e){
   alert("저장 실패: "+e.message);
  }
 };
+
 window.deleteAssessment=async id=>{
  if(!db)return;
  if(!confirm("모든 학생 화면에서 이 일정을 삭제할까요?"))return;
- try{await deleteDoc(doc(db,"assessments",id));}
- catch(e){alert("삭제 실패: "+e.message);}
+ try{
+  await remove(ref(db,"assessments/"+id));
+ }catch(e){
+  alert("삭제 실패: "+e.message);
+ }
 };
 
 
