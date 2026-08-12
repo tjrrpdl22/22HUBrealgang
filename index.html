@@ -256,7 +256,7 @@ function renderAcademicSchedule(){
    displayDate:x.date,
    title:x.name||"학사일정"
   }))
-  .filter(x=>x.date)
+  .filter(x=>x.date && !String(x.title||"").includes("토요휴업일"))
   .sort((a,b)=>a.date.localeCompare(b.date));
 
  // 2) 같은 제목이 날짜상 연속되면 하나의 기간으로 압축
